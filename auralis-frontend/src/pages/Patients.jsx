@@ -7,12 +7,12 @@ import { useAuth } from '../context/AuthContext';
 
 const StatusBadge = ({ status }) => {
     const styles = {
-        Stable: 'bg-emerald-500/10 text-emerald-600 border-emerald-200/50',
-        Low: 'bg-emerald-500/10 text-emerald-600 border-emerald-200/50',
-        Moderate: 'bg-amber-500/10 text-amber-600 border-amber-200/50',
-        Observation: 'bg-amber-500/10 text-amber-600 border-amber-200/50',
-        High: 'bg-rose-500/10 text-rose-600 border-rose-200/50',
-        Discharged: 'bg-slate-500/10 text-slate-600 border-slate-200/50',
+        Stable: 'bg-emerald-500/10 text-emerald-600 border-emerald-200/50 dark:text-emerald-400 dark:border-emerald-500/30',
+        Low: 'bg-emerald-500/10 text-emerald-600 border-emerald-200/50 dark:text-emerald-400 dark:border-emerald-500/30',
+        Moderate: 'bg-amber-500/10 text-amber-600 border-amber-200/50 dark:text-amber-400 dark:border-amber-500/30',
+        Observation: 'bg-amber-500/10 text-amber-600 border-amber-200/50 dark:text-amber-400 dark:border-amber-500/30',
+        High: 'bg-rose-500/10 text-rose-600 border-rose-200/50 dark:text-rose-400 dark:border-rose-500/30',
+        Discharged: 'bg-slate-500/10 text-slate-600 border-slate-200/50 dark:text-slate-400 dark:border-slate-500/30',
     };
 
     const icons = {
@@ -67,126 +67,127 @@ const PatientModal = ({ isOpen, onClose, onSubmit, initialData = null, title = "
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-16 bg-black/50 backdrop-blur-sm overflow-y-auto no-scrollbar">
             <motion.div
                 initial={{ opacity: 0, scale: 0.95 }}
                 animate={{ opacity: 1, scale: 1 }}
-                className="bg-card w-full max-w-lg rounded-xl md:rounded-2xl border border-border shadow-2xl p-4 md:p-6 relative"
+                className="bg-card w-full max-w-lg rounded-xl md:rounded-2xl border border-border shadow-2xl p-6 relative flex flex-col max-h-[90vh]"
             >
-                <button onClick={onClose} className="absolute right-4 top-4 p-2 hover:bg-secondary rounded-full transition-colors">
+                <button onClick={onClose} className="absolute right-4 top-4 p-2 hover:bg-secondary rounded-full transition-colors z-10">
                     <X className="h-5 w-5 text-muted-foreground" />
                 </button>
 
-                <h3 className="text-xl font-bold mb-6 flex items-center gap-2">
+                <h3 className="text-xl font-bold mb-6 flex items-center gap-2 shrink-0">
                     {initialData ? <Edit2 className="h-5 w-5 text-primary" /> : <UserPlus className="h-5 w-5 text-primary" />}
                     {title}
                 </h3>
 
-                <form onSubmit={(e) => { e.preventDefault(); onSubmit(formData); }} className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                <div className="overflow-y-auto pr-2 no-scrollbar">
+                    <form onSubmit={(e) => { e.preventDefault(); onSubmit(formData); }} className="space-y-4 pb-2">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-medium text-muted-foreground">Full Name</label>
+                                <input
+                                    required
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2 focus:ring-2 focus:ring-primary/20 outline-none"
+                                    placeholder="Patient name"
+                                />
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-medium text-muted-foreground">Age</label>
+                                <input
+                                    required
+                                    type="number"
+                                    value={formData.age}
+                                    onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+                                    className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2 focus:ring-2 focus:ring-primary/20 outline-none"
+                                    placeholder="Age"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-medium text-muted-foreground">Gender</label>
+                                <select
+                                    value={formData.gender}
+                                    onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                                    className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2 focus:ring-2 focus:ring-primary/20 outline-none"
+                                >
+                                    <option value="M">Male</option>
+                                    <option value="F">Female</option>
+                                    <option value="O">Other</option>
+                                </select>
+                            </div>
+                            <div className="space-y-1.5">
+                                <label className="text-sm font-medium text-muted-foreground">Status</label>
+                                <select
+                                    value={formData.status}
+                                    onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                                    className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2 focus:ring-2 focus:ring-primary/20 outline-none"
+                                >
+                                    <option value="Stable">Stable</option>
+                                    <option value="Observation">Observation</option>
+                                    <option value="Moderate">Moderate</option>
+                                    <option value="High">High Risk</option>
+                                </select>
+                            </div>
+                        </div>
+
                         <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-muted-foreground">Full Name</label>
+                            <label className="text-sm font-medium text-muted-foreground">Condition</label>
                             <input
                                 required
-                                value={formData.name}
-                                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                value={formData.condition}
+                                onChange={(e) => setFormData({ ...formData, condition: e.target.value })}
                                 className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2 focus:ring-2 focus:ring-primary/20 outline-none"
-                                placeholder="Patient name"
+                                placeholder="Primary diagnosis"
                             />
                         </div>
+
                         <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-muted-foreground">Age</label>
+                            <label className="text-sm font-medium text-muted-foreground">Ward / Location</label>
                             <input
                                 required
-                                type="number"
-                                value={formData.age}
-                                onChange={(e) => setFormData({ ...formData, age: e.target.value })}
+                                value={formData.ward}
+                                onChange={(e) => setFormData({ ...formData, ward: e.target.value })}
                                 className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2 focus:ring-2 focus:ring-primary/20 outline-none"
-                                placeholder="e.g. 45"
+                                placeholder="e.g. Ward B"
                             />
                         </div>
-                    </div>
 
-                    <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-muted-foreground">Gender</label>
+                            <label className="text-sm font-medium text-muted-foreground">Blood Type</label>
                             <select
-                                value={formData.gender}
-                                onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                                value={formData.blood_type}
+                                onChange={(e) => setFormData({ ...formData, blood_type: e.target.value })}
                                 className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2 focus:ring-2 focus:ring-primary/20 outline-none"
                             >
-                                <option value="M">Male</option>
-                                <option value="F">Female</option>
-                                <option value="O">Other</option>
+                                {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(type => (
+                                    <option key={type} value={type}>{type}</option>
+                                ))}
                             </select>
                         </div>
-                        <div className="space-y-1.5">
-                            <label className="text-sm font-medium text-muted-foreground">Status</label>
-                            <select
-                                value={formData.status}
-                                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                                className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2 focus:ring-2 focus:ring-primary/20 outline-none"
+
+                        <div className="flex gap-3 pt-6 shrink-0 sticky bottom-0 bg-card pb-2">
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="flex-1 bg-secondary text-foreground px-4 py-3 rounded-xl font-bold hover:bg-secondary/70 transition-colors"
                             >
-                                <option value="Stable">Stable</option>
-                                <option value="Observation">Observation</option>
-                                <option value="Critical">Critical</option>
-                                <option value="Discharged">Discharged</option>
-                            </select>
+                                Discard
+                            </button>
+                            <button
+                                type="submit"
+                                className="flex-1 bg-primary text-white px-4 py-3 rounded-xl font-black shadow-lg shadow-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all"
+                            >
+                                {initialData ? 'Update Record' : 'Admit Patient'}
+                            </button>
                         </div>
-                    </div>
-
-                    <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-muted-foreground">Condition</label>
-                        <input
-                            required
-                            value={formData.condition}
-                            onChange={(e) => setFormData({ ...formData, condition: e.target.value })}
-                            className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2 focus:ring-2 focus:ring-primary/20 outline-none"
-                            placeholder="Primary diagnosis"
-                        />
-                    </div>
-
-                    <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-muted-foreground">Ward / Location</label>
-                        <input
-                            required
-                            value={formData.ward}
-                            onChange={(e) => setFormData({ ...formData, ward: e.target.value })}
-                            className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2 focus:ring-2 focus:ring-primary/20 outline-none"
-                            placeholder="e.g. Ward B"
-                        />
-                    </div>
-
-                    <div className="space-y-1.5">
-                        <label className="text-sm font-medium text-muted-foreground">Blood Type</label>
-                        <select
-                            value={formData.blood_type}
-                            onChange={(e) => setFormData({ ...formData, blood_type: e.target.value })}
-                            className="w-full bg-secondary/30 border border-border rounded-xl px-4 py-2 focus:ring-2 focus:ring-primary/20 outline-none"
-                        >
-                            {['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map(type => (
-                                <option key={type} value={type}>{type}</option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div className="flex gap-3 pt-4">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="flex-1 bg-secondary text-foreground px-4 py-2.5 rounded-xl font-medium hover:bg-secondary/70 transition-colors"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            className="flex-1 bg-primary text-primary-foreground px-4 py-2.5 rounded-xl font-medium hover:bg-blue-600 transition-colors shadow-lg shadow-primary/20 flex items-center justify-center gap-2"
-                        >
-                            <Save className="h-4 w-4" />
-                            {initialData ? 'Update Record' : 'Admit Patient'}
-                        </button>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </motion.div>
         </div>
     );
@@ -295,7 +296,7 @@ const Patients = () => {
                             <button
                                 key={f}
                                 onClick={() => setFilter(f)}
-                                className={`px-4 md:px-6 py-2 md:py-3 rounded-lg md:rounded-xl text-sm md:text-base font-bold whitespace-nowrap transition-all duration-300 ${filter === f ? 'bg-white shadow-xl text-primary scale-105' : 'text-muted-foreground hover:text-foreground hover:bg-white/40'}`}
+                                className={`px-4 md:px-6 py-2 md:py-3 rounded-lg md:rounded-xl text-sm md:text-base font-bold whitespace-nowrap transition-all duration-300 ${filter === f ? 'bg-white dark:bg-slate-800 shadow-xl text-primary dark:text-cyan-400 scale-105' : 'text-muted-foreground hover:text-foreground hover:bg-white/40 dark:hover:bg-slate-800/40'}`}
                             >
                                 {f}
                             </button>
@@ -328,7 +329,7 @@ const Patients = () => {
                                             exit={{ opacity: 0, scale: 0.95 }}
                                             transition={{ delay: index * 0.05 }}
                                             onClick={() => navigate(`/patients/${patient.id}`)}
-                                            className="group bg-white/40 hover:bg-white hover:scale-[1.01] hover:shadow-2xl hover:shadow-primary/5 transition-all duration-300 cursor-pointer rounded-2xl relative"
+                                            className="group bg-white/40 dark:bg-slate-900/40 hover:bg-white dark:hover:bg-slate-800/60 hover:scale-[1.01] hover:shadow-2xl hover:shadow-primary/5 transition-all duration-300 cursor-pointer rounded-2xl relative border border-transparent dark:hover:border-slate-700/50"
                                         >
                                             <td className="px-4 md:px-6 py-4 md:py-5 rounded-l-2xl whitespace-nowrap">
                                                 <div className="flex items-center gap-4 md:gap-5">
@@ -342,7 +343,7 @@ const Patients = () => {
                                                 </div>
                                             </td>
                                             <td className="px-4 md:px-6 py-4 md:py-5 whitespace-nowrap">
-                                                <p className="text-sm md:text-base font-bold text-slate-700">{patient.condition}</p>
+                                                <p className="text-sm md:text-base font-bold text-slate-700 dark:text-slate-300">{patient.condition}</p>
                                                 <p className="text-[10px] md:text-xs text-muted-foreground font-medium">Primary Diagnosis</p>
                                             </td>
                                             <td className="px-4 md:px-6 py-4 md:py-5 whitespace-nowrap">
@@ -350,14 +351,14 @@ const Patients = () => {
                                             </td>
                                             <td className="px-4 md:px-6 py-4 md:py-5 whitespace-nowrap">
                                                 <div className="flex items-center gap-2">
-                                                    <div className="h-2 w-2 rounded-full bg-primary animate-pulse shrink-0" />
-                                                    <p className="text-sm md:text-base font-bold text-slate-700">{patient.ward}</p>
+                                                    <div className="h-2 w-2 rounded-full bg-primary dark:bg-cyan-500 animate-pulse shrink-0" />
+                                                    <p className="text-sm md:text-base font-bold text-slate-700 dark:text-slate-300">{patient.ward}</p>
                                                 </div>
                                             </td>
                                             <td className="px-4 md:px-6 py-4 md:py-5 text-center whitespace-nowrap">
-                                                <span className={`text-[10px] md:text-sm font-black px-3 py-1 md:px-4 md:py-1.5 rounded-lg md:rounded-xl uppercase tracking-tighter ${patient.risk === 'High' ? 'text-rose-600 bg-rose-50 border border-rose-100 shadow-sm' :
-                                                    patient.risk === 'Moderate' ? 'text-amber-600 bg-amber-50 border border-amber-100' :
-                                                        'text-emerald-600 bg-emerald-50 border border-emerald-100'
+                                                <span className={`text-[10px] md:text-sm font-black px-3 py-1 md:px-4 md:py-1.5 rounded-lg md:rounded-xl uppercase tracking-tighter ${patient.risk === 'High' ? 'text-rose-600 bg-rose-50 dark:bg-rose-500/10 dark:text-rose-400 border border-rose-100 dark:border-rose-500/20 shadow-sm' :
+                                                    patient.risk === 'Moderate' ? 'text-amber-600 bg-amber-50 dark:bg-amber-500/10 dark:text-amber-400 border border-amber-100 dark:border-amber-500/20' :
+                                                        'text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-500/20'
                                                     }`}>
                                                     {patient.risk}
                                                 </span>
@@ -366,13 +367,13 @@ const Patients = () => {
                                                 <div className="flex items-center justify-end gap-1 md:gap-2">
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); setEditingPatient(patient); }}
-                                                        className="p-2 md:p-3 bg-secondary/50 hover:bg-primary hover:text-white rounded-lg md:rounded-xl text-primary transition-all duration-300 md:opacity-0 md:group-hover:opacity-100 shadow-sm"
+                                                        className="p-2 md:p-3 bg-secondary/50 dark:bg-slate-800/50 hover:bg-primary dark:hover:bg-cyan-500 hover:text-white rounded-lg md:rounded-xl text-primary dark:text-cyan-400 transition-all duration-300 md:opacity-0 md:group-hover:opacity-100 shadow-sm"
                                                     >
                                                         <Edit2 className="h-4 w-4 md:h-5 md:w-5" />
                                                     </button>
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); handleDelete(patient.id, patient.name); }}
-                                                        className="p-2 md:p-3 bg-red-50 hover:bg-red-500 hover:text-white rounded-lg md:rounded-xl text-red-500 transition-all duration-300 md:opacity-0 md:group-hover:opacity-100 shadow-sm"
+                                                        className="p-2 md:p-3 bg-red-50 dark:bg-red-500/10 hover:bg-red-500 hover:text-white rounded-lg md:rounded-xl text-red-500 dark:text-red-400 transition-all duration-300 md:opacity-0 md:group-hover:opacity-100 shadow-sm"
                                                     >
                                                         <Trash2 className="h-4 w-4 md:h-5 md:w-5" />
                                                     </button>

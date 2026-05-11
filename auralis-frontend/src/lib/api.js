@@ -185,8 +185,8 @@ export const fetchAuditLogs = async () => {
     return response.json();
 };
 
-export const fetchPatientMLTrends = async (id) => {
-    const response = await fetch(`${BASE_URL}/patients/${id}/ml-trends`);
+export const fetchPatientMLTrends = async (id, timeScale = 'all') => {
+    const response = await fetch(`${BASE_URL}/patients/${id}/ml-trends?time_scale=${timeScale}`);
     if (!response.ok) throw new Error('Failed to fetch ML trends');
     return response.json();
 };

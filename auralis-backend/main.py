@@ -794,76 +794,149 @@ async def get_patient_vitals(patient_id: str):
     return all_vitals
 
 @app.get("/patients/{patient_id}/ml-trends")
-async def get_patient_ml_trends(patient_id: str):
-    vitals_data = await get_patient_vitals(patient_id)
-    if not vitals_data:
-        return {"anomalies": [], "trends": [], "summary": "No clinical data available."}
-    
-    if len(vitals_data) < 3:
-        return {"anomalies": [], "trends": [], "summary": "Initial baseline established. Monitoring for physiological shifts."}
-
-    v_df = pd.DataFrame(vitals_data)
-    v_df['timestamp'] = pd.to_datetime(v_df['timestamp'])
-    v_df = v_df.sort_values('timestamp')
-
-    anomalies = []
-    trends = []
-    
-    metrics = ['hr', 'sbp', 'temp', 'spo2']
-    names = {'hr': 'Heart Rate', 'sbp': 'Blood Pressure', 'temp': 'Temperature', 'spo2': 'Oxygen Saturation'}
-    
-    for metric in metrics:
-        if metric not in v_df.columns: continue
+async def get_patient_ml_trends(patient_id: str, time_scale: Optional[str] = "all"):
+    try:
+        vitals_data = await get_patient_vitals(patient_id)
+        if not vitals_data:
+            return {"anomalies": [], "trends": [], "summary": "No clinical data available."}
+            
+        # Full Historical Data for Baseline
+        df_all = pd.DataFrame(vitals_data)
+        df_all['timestamp'] = pd.to_datetime(df_all['timestamp'])
+        df_all = df_all.sort_values('timestamp')
         
-        # 1. Anomaly Detection (Simple Z-score)
-        mean = v_df[metric].mean()
-        std = v_df[metric].std()
+        # Filtered Window Data for current view
+        df_window = df_all.copy()
+        if time_scale != "all":
+            now = pd.Timestamp.utcnow().tz_localize(None)
+            if df_window['timestamp'].dt.tz is not None:
+                df_window['timestamp'] = df_window['timestamp'].dt.tz_localize(None)
+                
+            if time_scale == "24h":
+                cutoff = now - pd.Timedelta(days=1)
+            elif time_scale == "7d":
+                cutoff = now - pd.Timedelta(days=7)
+            else:
+                cutoff = pd.Timestamp.min
+            df_window = df_window[df_window['timestamp'] >= cutoff]
+            
+        if len(df_all) < 2:
+            return {
+                "anomalies": [], 
+                "trends": [], 
+                "summary": "Establishing patient physiological baseline."
+            }
+
+        anomalies = []
+        trends = []
+        metrics = ['hr', 'sbp', 'temp', 'spo2']
+        names = {'hr': 'Heart Rate', 'sbp': 'Blood Pressure', 'temp': 'Temperature', 'spo2': 'Oxygen Saturation'}
         
-        if std > 0:
-            v_df[f'{metric}_zscore'] = (v_df[metric] - mean) / std
-            metric_anomalies = v_df[v_df[f'{metric}_zscore'].abs() > 2]
+        # Identify "Latest" data (up to last 5 entries) for immediate alerts
+        latest_n = min(5, len(df_all))
+        df_latest = df_all.tail(latest_n)
+        
+        for metric in metrics:
+            if metric not in df_all.columns: continue
             
-            for _, row in metric_anomalies.iterrows():
-                anomalies.append({
-                    "metric": metric,
-                    "label": names[metric],
-                    "value": row[metric],
-                    "timestamp": row['timestamp'].isoformat(),
-                    "severity": "High" if abs(row[f'{metric}_zscore']) > 3 else "Medium",
-                    "type": "Spike" if row[f'{metric}_zscore'] > 0 else "Drop"
-                })
+            # Calculate historical baseline
+            # If we have enough data, exclude the last N points to detect spikes in them
+            # If we have very little data, use everything but the last 1 point
+            if len(df_all) > latest_n:
+                df_baseline = df_all.iloc[:-latest_n]
+            elif len(df_all) > 1:
+                df_baseline = df_all.iloc[:-1]
+            else:
+                df_baseline = df_all
 
-        # 2. Trend Analysis (Moving Average Comparison)
-        if len(v_df) >= 5:
-            last_5 = v_df[metric].tail(5).mean()
-            prev_5 = v_df[metric].iloc[-10:-5].mean() if len(v_df) >= 10 else mean
+            base_mean = df_baseline[metric].mean()
+            base_std = df_baseline[metric].std()
             
-            diff_pct = ((last_5 - prev_5) / prev_5) * 100 if prev_5 != 0 else 0
-            
-            if abs(diff_pct) > 10:
-                trends.append({
-                    "metric": metric,
-                    "label": names[metric],
-                    "direction": "Upward" if diff_pct > 0 else "Downward",
-                    "change_pct": round(diff_pct, 1),
-                    "insight": f"{names[metric]} is showing a significant { 'upward' if diff_pct > 0 else 'downward' } progression."
-                })
+            if pd.isna(base_mean) or base_mean == 0:
+                base_mean = df_all[metric].mean()
+                base_std = df_all[metric].std()
 
-    # Summary Generation
-    critical_count = len([a for a in anomalies if a['severity'] == "High"])
-    if critical_count > 0:
-        summary = f"Detected {critical_count} critical physiological anomalies. Immediate review recommended."
-    elif trends:
-        summary = f"Longitudinal patterns indicate {len(trends)} notable shifts in patient stability."
-    else:
-        summary = "Patient physiological data remains within baseline clusters."
+            if pd.isna(base_mean) or base_mean == 0: continue
 
-    return {
-        "anomalies": anomalies,
-        "trends": trends,
-        "summary": summary,
-        "ml_version": "v1.0.anomaly-z"
-    }
+            # 1. Immediate Anomaly Detection (Check latest points vs baseline)
+            for _, row in df_latest.iterrows():
+                val = row[metric]
+                if pd.isna(val): continue
+                
+                pct_diff = abs(val - base_mean) / base_mean if base_mean != 0 else 0
+                
+                is_anomaly = False
+                severity = "Medium"
+                
+                # Check percentage shift
+                if pct_diff > 0.15:
+                    is_anomaly = True
+                    severity = "High" if pct_diff > 0.25 else "Medium"
+                
+                # Check Z-score
+                if not is_anomaly and not pd.isna(base_std) and base_std > 0:
+                    zscore = (val - base_mean) / base_std
+                    if abs(zscore) > 2.0:
+                        is_anomaly = True
+                        severity = "High" if abs(zscore) > 3.0 else "Medium"
+                
+                if is_anomaly:
+                    if not any(a['metric'] == metric and a['value'] == val for a in anomalies):
+                        anomalies.append({
+                            "metric": metric,
+                            "label": names[metric],
+                            "value": val,
+                            "timestamp": row['timestamp'].isoformat() if hasattr(row['timestamp'], 'isoformat') else str(row['timestamp']),
+                            "severity": severity,
+                            "type": "Spike" if val > base_mean else "Drop"
+                        })
+
+            # 2. Trend Analysis (Shift Detection in window)
+            if not df_window.empty:
+                win_mean = df_window[metric].mean()
+                if not pd.isna(win_mean) and base_mean > 0:
+                    shift_pct = ((win_mean - base_mean) / base_mean) * 100
+                    # Lower threshold for trend detection to be more sensitive
+                    if abs(shift_pct) > 5:
+                        trends.append({
+                            "metric": metric,
+                            "label": names[metric],
+                            "direction": "Upward" if shift_pct > 0 else "Downward",
+                            "change_pct": round(shift_pct, 1),
+                            "insight": f"{names[metric]} is {round(abs(shift_pct))}% {'higher' if shift_pct > 0 else 'lower'} than historical baseline."
+                        })
+
+        # Summary Generation
+        time_label = "current selection" if time_scale == "all" else f"last {time_scale}"
+        critical_count = len([a for a in anomalies if a['severity'] == "High"])
+        
+        if critical_count > 0:
+            summary = f"Detected {critical_count} critical physiological spikes. Immediate clinical evaluation of {', '.join(set(a['label'] for a in anomalies if a['severity']=='High'))} is required."
+        elif trends:
+            high_trend = max(trends, key=lambda x: abs(x['change_pct']))
+            summary = f"Noticeable {high_trend['direction'].lower()} shift detected in {high_trend['label']} compared to baseline."
+        elif anomalies:
+            summary = f"Minor physiological fluctuations detected in recent readings. Monitoring continues."
+        else:
+            summary = f"Patient physiological state is stable and consistent with historical clusters for the {time_label}."
+
+        return {
+            "anomalies": anomalies[:10],
+            "trends": trends,
+            "summary": summary,
+            "time_scale": time_scale,
+            "ml_version": "v1.3.robust-sensitive"
+        }
+    except Exception as e:
+        print(f"Error in ML trends analysis: {e}")
+        import traceback
+        traceback.print_exc()
+        return {
+            "anomalies": [],
+            "trends": [],
+            "summary": "Clinical analysis module encountered an error processing this patient's history.",
+            "error": str(e)
+        }
 
 @app.get("/patients/{patient_id}/risk-history")
 async def get_patient_risk_history(patient_id: str):
@@ -920,25 +993,59 @@ async def get_patient_risk_history(patient_id: str):
 
 @app.get("/patients/{patient_id}/timeline")
 async def get_patient_timeline(patient_id: str):
-    patient_df = df[df['hadm_id'] == patient_id]
-    if patient_df.empty:
-        from datetime import timedelta
-        now = datetime.now()
-        return [
-            {"time": str(now - timedelta(days=2)), "event": "Emergency Admission", "type": "initial", "provider": "EMS"},
-            {"time": str(now - timedelta(days=1)), "event": "Attending Physician Review", "type": "consult", "provider": "Dr. Sarah Connor"},
-            {"time": str(now), "event": "Current Monitoring", "type": "observation", "provider": "Clinical Team"}
-        ]
-    
-    event_map = {0: "Admission", 1: "Routine Observation", 2: "Medication Review", 3: "Physician Consult", 4: "Specialist Review"}
     timeline = []
-    for _, row in patient_df.iterrows():
+    
+    # 1. Fetch Admission Baseline (if exists)
+    patient = await db.patients.find_one({"$or": [{"_id": ObjectId(patient_id) if ObjectId.is_valid(patient_id) else None}, {"id": patient_id}]})
+    if patient:
         timeline.append({
-            "time": str(row['charttime']),
-            "event": event_map.get(row['prev_event'], "Monitoring"),
-            "type": "vital_check",
-            "provider": "Nursing Staff"
+            "time": str(patient.get("created_at", datetime.utcnow())),
+            "event": "Clinical Admission",
+            "type": "initial",
+            "provider": "Admissions Desk",
+            "description": f"Patient admitted for {patient.get('condition', 'Observation')}."
         })
+
+    # 2. Fetch Vitals Events (Sample them if too many)
+    async for v in db.vitals.find({"patient_id": patient_id}).sort("timestamp", -1).limit(10):
+        timeline.append({
+            "time": str(v["timestamp"]),
+            "event": "Vitals Synchronization",
+            "type": "vital_check",
+            "provider": "Nursing Staff",
+            "description": f"HR: {v['hr']}, BP: {v['sbp']}/{v.get('dbp', 80)}, SpO2: {v['spo2']}%"
+        })
+
+    # 3. Fetch Diagnosis Events
+    async for d in db.diagnosis.find({"patient_id": patient_id}).sort("timestamp", -1):
+        timeline.append({
+            "time": str(d["timestamp"]),
+            "event": "Physician Consultation",
+            "type": "consult",
+            "provider": "Attending Physician",
+            "description": f"Diagnosis: {d['diagnosis']}. Treatment initiated."
+        })
+
+    # 4. Fetch Billing Events
+    async for b in db.bills.find({"patient_id": patient_id}).sort("created_at", -1):
+        timeline.append({
+            "time": str(b.get("created_at", datetime.utcnow())),
+            "event": "Administrative Billing",
+            "type": "billing",
+            "provider": "Finance Dept",
+            "description": f"Generated bill for {b['service_name']} - ₹{b['total_cost']}"
+        })
+
+    # Sort final timeline by time descending
+    timeline.sort(key=lambda x: x["time"], reverse=True)
+    
+    # Fallback if empty
+    if not timeline:
+        now = datetime.utcnow()
+        return [
+            {"time": str(now), "event": "System Initialization", "type": "observation", "provider": "Auralis AI", "description": "No historical events found for this record."}
+        ]
+        
     return timeline
 
 @app.put("/doctors/{doctor_id}")

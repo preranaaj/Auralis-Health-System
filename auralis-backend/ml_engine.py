@@ -65,8 +65,8 @@ class MLEngine:
         if hr > 130 or hr < 40: score += 3
         elif hr > 110 or hr < 50: score += 2
         
-        if sbp < 90: score += 3
-        elif sbp < 100: score += 2
+        if sbp <= 90 or sbp >= 220: score += 3
+        elif sbp <= 100 or sbp >= 160: score += 2
         
         if spo2 < 92: score += 3
         elif spo2 < 94: score += 2
@@ -103,8 +103,10 @@ class MLEngine:
         final_risk = (ml_prob * 0.6) + (clinical_skew * 0.4)
         
         # 3. High-Urgency Overrides (Safety Net)
-        if latest.get('spo2', 98) < 88 or latest.get('sbp', 120) > 200:
+        if latest.get('spo2', 98) < 88 or latest.get('sbp', 120) >= 180 or latest.get('hr', 75) >= 140:
             final_risk = max(final_risk, 0.95)
+        elif latest.get('sbp', 120) >= 160 or latest.get('hr', 75) >= 120:
+            final_risk = max(final_risk, 0.75)
             
         return min(final_risk, 0.98)
 

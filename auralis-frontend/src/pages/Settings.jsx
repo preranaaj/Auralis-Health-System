@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { User, Bell, Shield, Moon, Sun, LogOut, ChevronRight, Smartphone, Mail, Save, Award, GraduationCap, Briefcase, Stethoscope } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { updateDoctor } from '../lib/api';
 
 const Toggle = ({ enabled, setEnabled }) => (
@@ -30,7 +31,8 @@ const SettingsSection = ({ title, icon: Icon, children }) => (
 
 const Settings = () => {
     const { user, logout, refreshUser } = useAuth();
-    const [darkMode, setDarkMode] = useState(false);
+    const { isDark, toggle: toggleTheme } = useTheme();
+    const darkMode = isDark;
     const [emailNotifs, setEmailNotifs] = useState(true);
     const [pushNotifs, setPushNotifs] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
@@ -49,20 +51,6 @@ const Settings = () => {
         achievements: user?.achievements?.join(', ') || ''
     });
 
-    useEffect(() => {
-        if (document.documentElement.classList.contains('dark')) {
-            setDarkMode(true);
-        }
-    }, []);
-
-    const toggleTheme = () => {
-        setDarkMode(!darkMode);
-        if (!darkMode) {
-            document.documentElement.classList.add('dark');
-        } else {
-            document.documentElement.classList.remove('dark');
-        }
-    };
 
     const handleSaveProfile = async () => {
         setIsSaving(true);

@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Activity, Lock, Mail, User, ArrowRight, ShieldCheck } from 'lucide-react';
 import { cn } from '../lib/utils';
@@ -12,7 +12,16 @@ const Register = () => {
     const [gender, setGender] = useState('');
     const [role, setRole] = useState('Patient');
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const { register } = useAuth();
+    const { user, register } = useAuth();
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (user) {
+            if (user.role === 'Admin') navigate('/admin', { replace: true });
+            else if (user.role === 'Doctor') navigate('/dashboard', { replace: true });
+            else navigate('/portal', { replace: true });
+        }
+    }, [user, navigate]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();

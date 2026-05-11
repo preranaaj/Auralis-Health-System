@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Activity, Lock, Mail, ArrowRight, ShieldCheck } from 'lucide-react';
 
@@ -8,7 +8,16 @@ const Login = () => {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const { login } = useAuth();
+    const { user, login } = useAuth();
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        if (user) {
+            if (user.role === 'Admin') navigate('/admin', { replace: true });
+            else if (user.role === 'Doctor') navigate('/dashboard', { replace: true });
+            else navigate('/portal', { replace: true });
+        }
+    }, [user, navigate]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -23,7 +32,7 @@ const Login = () => {
     };
 
     return (
-        <div className="flex h-screen w-full bg-background overflow-hidden font-sans">
+        <div className="flex min-h-screen w-full bg-background overflow-y-auto overflow-x-hidden font-sans">
             {/* Left Panel - Visuals & Branding */}
             <div className="hidden lg:flex w-7/12 bg-primary relative items-center justify-center overflow-hidden">
                 {/* High-quality medical background overlay */}

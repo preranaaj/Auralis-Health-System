@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { ThemeProvider } from './context/ThemeContext';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Layout from './components/Layout';
@@ -16,30 +17,43 @@ import AdminCommand from './pages/AdminCommand';
 import Appointments from './pages/Appointments';
 import AuditLogs from './pages/AuditLogs';
 import PatientTimeline from './pages/PatientTimeline';
+import PatientCDSSDashboard from './pages/PatientCDSSDashboard';
+
+// Full-screen layout — no sidebar, no header
+const FullScreenLayout = () => (
+  <div className="h-screen w-full bg-slate-950 overflow-hidden">
+    <Outlet />
+  </div>
+);
 
 // Protected Route Wrapper
 const ProtectedRoute = () => {
   const { user, loading } = useAuth();
-
-  if (loading) return <div className="h-screen w-full flex items-center justify-center bg-background"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>;
-
+  if (loading) return <div className="h-screen w-full flex items-center justify-center bg-slate-950"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-500" /></div>;
   return user ? <Outlet /> : <Navigate to="/login" />;
 };
 
 function App() {
   return (
-    <Router>
+    <ThemeProvider>
+      <Router>
       <AuthProvider>
         <Routes>
           {/* Public Routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
 
-          {/* Protected Routes */}
+          {/* All protected routes */}
           <Route element={<ProtectedRoute />}>
-            <Route element={<Layout />}>
+            {/* Full-screen CDSS routes (no sidebar/header) */}
+            <Route element={<FullScreenLayout />}>
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
               <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/patients/:id/cdss" element={<PatientCDSSDashboard />} />
+            </Route>
+
+            {/* Standard sidebar routes */}
+            <Route element={<Layout />}>
               <Route path="/portal" element={<PatientPortal />} />
               <Route path="/admin" element={<AdminCommand />} />
               <Route path="/audit-logs" element={<AuditLogs />} />
@@ -58,7 +72,8 @@ function App() {
           <Route path="*" element={<Navigate to="/login" />} />
         </Routes>
       </AuthProvider>
-    </Router>
+      </Router>
+    </ThemeProvider>
   );
 }
 

@@ -52,13 +52,13 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     const navItems = getNavItems();
 
     const SidebarContent = () => (
-        <div className="flex flex-col h-full bg-card border-r border-border shadow-sm">
-            <div className="p-6 flex items-center justify-between">
+        <div className="flex flex-col h-full bg-card border-r border-border shadow-sm transition-colors duration-300">
+            <div className="p-6 flex items-center justify-between border-b border-border">
                 <div className="flex items-center gap-2">
-                    <div className="bg-primary/10 p-2 rounded-lg">
-                        <Activity className="h-6 w-6 text-primary" />
+                    <div className="bg-primary/10 dark:bg-cyan-500/20 p-2 rounded-lg">
+                        <Activity className="h-6 w-6 text-primary dark:text-cyan-400" />
                     </div>
-                    <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-600">
+                    <span className="text-xl font-black bg-clip-text text-transparent bg-gradient-to-r from-primary to-blue-600 dark:from-cyan-400 dark:to-indigo-400">
                         Auralis
                     </span>
                 </div>
@@ -79,8 +79,8 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                             cn(
                                 "flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200 group",
                                 isActive
-                                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25"
-                                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                                    ? "bg-primary text-primary-foreground shadow-lg shadow-primary/25 dark:bg-cyan-500/20 dark:text-cyan-300 dark:border dark:border-cyan-500/30"
+                                    : "text-muted-foreground hover:bg-secondary hover:text-foreground dark:hover:bg-slate-800"
                             )
                         }
                     >

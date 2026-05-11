@@ -12,11 +12,16 @@ export const AuthProvider = ({ children }) => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        const storedUser = localStorage.getItem('auralis_user');
-        if (storedUser) {
-            setUser(JSON.parse(storedUser));
+        try {
+            const storedUser = localStorage.getItem('auralis_user');
+            if (storedUser) {
+                setUser(JSON.parse(storedUser));
+            }
+        } catch (err) {
+            console.error("Auth initialization error:", err);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
     }, []);
 
     const login = async (email, password) => {
@@ -41,13 +46,13 @@ export const AuthProvider = ({ children }) => {
             setUser(userWithAvatar);
             localStorage.setItem('auralis_user', JSON.stringify(userWithAvatar));
 
-            // Role-based redirection
+            // Role-based redirection with history replacement
             if (userWithAvatar.role === 'Admin') {
-                navigate('/admin');
+                navigate('/admin', { replace: true });
             } else if (userWithAvatar.role === 'Doctor') {
-                navigate('/dashboard');
+                navigate('/dashboard', { replace: true });
             } else {
-                navigate('/portal'); // Patient Portal
+                navigate('/portal', { replace: true }); // Patient Portal
             }
 
             return { success: true };
@@ -61,7 +66,7 @@ export const AuthProvider = ({ children }) => {
     const logout = () => {
         setUser(null);
         localStorage.removeItem('auralis_user');
-        navigate('/login');
+        navigate('/login', { replace: true });
     };
 
     const register = async (name, email, password, gender, role = 'Patient') => {
@@ -86,11 +91,11 @@ export const AuthProvider = ({ children }) => {
             setUser(userWithAvatar);
             localStorage.setItem('auralis_user', JSON.stringify(userWithAvatar));
 
-            // Redirect based on role
+            // Redirect based on role with history replacement
             if (role === 'Doctor') {
-                navigate('/dashboard');
+                navigate('/dashboard', { replace: true });
             } else {
-                navigate('/portal');
+                navigate('/portal', { replace: true });
             }
 
             return { success: true };
