@@ -2,7 +2,7 @@
 
 A state-of-the-art Clinical Decision Support System (CDSS) and Hospital Management Platform designed for the modern healthcare era. Auralis combines high-fidelity data visualization with an immersive, glassmorphic user interface to provide clinicians with real-time insights and a streamlined workflow.
 
-![Auralis Dashboard](https://images.unsplash.com/photo-1576091160550-217359f42f8c?auto=format&fit=crop&q=80&w=2070)
+
 
 ## 🌟 Key Features
 
